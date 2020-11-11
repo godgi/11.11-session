@@ -7,7 +7,6 @@
     <h3>글 내용 : {{ post.content }} </h3><br>
     <h3>작성 시각 : {{ post.created_at }} </h3><br>
     <h4>조회 수: {{ post.view_count }} </h4><br>
-
     {% if post.user %}
         <h3> 작성자 : {{ post.user }}</h3>
     {% else %}
@@ -18,6 +17,21 @@
         <img src="{{ post.image.url }}" width="500px" height="500px">
     {% endif %}
     <br>
+
+    <form action="#" method="POST" style="margin-top: 50px;" class="create-comment-form">
+        {% csrf_token %}
+        <div class="form-group">
+            <textarea class="form-control" name="content" id="comment-input-{{ post.pk }}" placeholder="댓글 작성..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary comment-submit-button" data-post-id="{{ post.pk }}">작성</button>
+    </form><br>
+    {% if comments %}
+        <ul class="list-group" id="comments-list-{{ post.pk }}" style="margin-top: 40px;">
+            {% for comment in comments %}
+                {% include 'comments/_comment.html' with comment=comment user=user %}
+            {% endfor %}
+        </ul>
+    {% endif %}
 
     {% if post.user == user %}
         <a href="{% url 'items:delete' post.pk %}"> 삭제하기 </a>
@@ -141,6 +155,32 @@
             },
         });
     })
+
+    $('.comment-submit-button').click(function(e){
+        e.preventDefault();
+        const postId = $(this).data('post-id');
+        const commentMessage = $(`#comment-input-${postId}`).val();
+        console.log(commentMessage)
+        if (commentMessage === '') {
+            alert('댓글 내용을 입력해주세요.');
+        } else {
+            $.ajax({
+                url: "{% url 'items:create_comment' post.pk %}",
+                type: "POST",
+                data: {
+                    'csrfmiddlewaretoken': '{{ csrf_token }}',
+                    'content': commentMessage
+                },
+                success: function(response) {
+                    $(`#comments-list-${postId}`).prepend(response.comment);
+                    $(`#comment-input-${postId}`).val('');
+                },
+                error: function(response) {
+                    alert('오류가 발생했습니다.');
+                }
+            });
+        }
+    });
 </script>
 
 
